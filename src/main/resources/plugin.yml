@@ -1,0 +1,9 @@
+name: NPCFramework
+version: 0.0.1
+main: net.siegemc.npc.NPCFramework
+api-version: 1.16
+description: A plugin for creating NPCs and complex dialogue via kotlin scripts
+prefix: Siege
+depend: [ ProtocolLib, Kotlin ]
+load: STARTUP
+authors: [ Ghqst ]
