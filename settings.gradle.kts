@@ -1,3 +1,3 @@
 
-rootProject.name = "NPCFramework"
+rootProject.name = "CosmeticsTest"
 

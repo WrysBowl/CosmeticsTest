@@ -1,9 +1,9 @@
-name: NPCFramework
+name: CosmeticsTest
 version: 0.0.1
-main: net.siegemc.npc.NPCFramework
+main: net.siegemc.test.cosmetics.CosmeticsTest
 api-version: 1.16
-description: A plugin for creating NPCs and complex dialogue via kotlin scripts
-prefix: Siege
+description: A test plugin for cosmetics
+prefix: CosmeticsTest
 depend: [ ProtocolLib, Kotlin ]
 load: STARTUP
 authors: [ Ghqst ]
