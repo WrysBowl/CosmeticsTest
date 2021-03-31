@@ -14,6 +14,7 @@ import com.comphenix.protocol.events.PacketEvent
 import com.comphenix.protocol.events.PacketAdapter
 import com.comphenix.protocol.wrappers.EnumWrappers
 import com.comphenix.protocol.wrappers.Pair
+import de.tr7zw.nbtapi.NBTItem
 import org.bukkit.Color
 import org.bukkit.Material
 //import org.bukkit.event.Event
@@ -38,7 +39,8 @@ class CosmeticsTest: JavaPlugin(), Listener {
             private set;
     }
 
-    val lastLoggedOutItems = hashMapOf<UUID, ItemStack?>()
+    val cosmetics = hashMapOf<UUID, ItemStack?>()
+    val cosmeticEnabled = hashMapOf<UUID, Boolean>()
     private lateinit var protocolManager: ProtocolManager
 
     override fun onEnable() {
@@ -48,6 +50,10 @@ class CosmeticsTest: JavaPlugin(), Listener {
 
         protocolManager = ProtocolLibrary.getProtocolManager()
         server.pluginManager.registerEvents(this, this)
+        val item = ItemStack(Material.PAPER)
+        val nbtItem = NBTItem(item)
+        nbtItem.setInteger("CustomModelData", 1)
+        cosmetics[UUID.fromString("19d9822a-83ad-44f3-bb79-f87bf6dd53d0")] = nbtItem.item
 
         protocolManager.addPacketListener(object : PacketAdapter(
             this,
@@ -55,25 +61,28 @@ class CosmeticsTest: JavaPlugin(), Listener {
         ) {
             override fun onPacketSending(event: PacketEvent) {
 
-                //stack = packet.itemModifier.read(0)
-                val pairList = event.packet.slotStackPairLists.read(0)
+                val entity = event.packet.getEntityModifier(event.player.world).read(0)
+                if (entity is Player) {
+                    Bukkit.getLogger().info("the player name is ${entity.name}, they ${if (cosmeticEnabled[entity.uniqueId] == true) "do" else "don't"} have cosmetics enabled, and the type of their cosmetic is ${cosmetics[entity.uniqueId]?.type}")
 
-                // Color that depends on the player's name
-//                val receiverName = event.player.name
-//                val color = receiverName.hashCode() and 0x85B670
+                    if (cosmetics[entity.uniqueId] == null || cosmeticEnabled[entity.uniqueId] == false) return
 
-                // Update the color
-                for (pair in pairList) {
-                    if (pair.first == EnumWrappers.ItemSlot.FEET) {
-                        Bukkit.getLogger().info("equipment packet to ${event.player.name}")
-                        Bukkit.getLogger().info("FROM: ${pair.second.type}")
-                        if (pair.first == EnumWrappers.ItemSlot.FEET) pair.second = ItemStack(Material.GOLDEN_BOOTS)
-                        Bukkit.getLogger().info("TO: ${pair.second.type}")
+                    val pairList = event.packet.slotStackPairLists.read(0)
+
+
+                    for (pair in pairList) {
+                        if (pair.first == EnumWrappers.ItemSlot.HEAD) {
+                            Bukkit.getLogger().info("equipment packet to ${event.player.name}")
+                            Bukkit.getLogger().info("FROM: ${pair.second.type}")
+                            pair.second = cosmetics[entity.uniqueId]
+                            Bukkit.getLogger().info("TO: ${pair.second.type}")
+                        }
+
                     }
 
+                    event.packet.slotStackPairLists.write(0, pairList)
                 }
 
-                event.packet.slotStackPairLists.write(0, pairList)
 
             }
         })
@@ -81,14 +90,13 @@ class CosmeticsTest: JavaPlugin(), Listener {
         Bukkit.getLogger().info("Enabled!")
     }
 
-    fun changeCosmetic(player: Player) {
-        Bukkit.getLogger().info("hi")
+    fun showCosmetic(player: Player) {
+        //Bukkit.getLogger().info("hi")
         val testPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT)
         testPacket.integers.write(0, player.entityId)
-        testPacket.slotStackPairLists.write(0, mutableListOf(Pair(EnumWrappers.ItemSlot.FEET, ItemStack(Material.GOLDEN_BOOTS))))
-        val pairList = testPacket.slotStackPairLists.read(0)
+        testPacket.slotStackPairLists.write(0, mutableListOf(Pair(EnumWrappers.ItemSlot.HEAD, cosmetics[player.uniqueId])))
+        //val pairList = testPacket.slotStackPairLists.read(0)
         //Bukkit.getLogger().info(pairList[0].second.type.toString())
-        lastLoggedOutItems[player.uniqueId] = player.inventory.boots
         protocolManager.sendServerPacket(player, testPacket)
 
 
@@ -101,40 +109,36 @@ class CosmeticsTest: JavaPlugin(), Listener {
     fun unhideCosmetic(player: Player) {
         val testPacket = protocolManager.createPacket(PacketType.Play.Server.ENTITY_EQUIPMENT)
         testPacket.integers.write(0, player.entityId)
-        testPacket.slotStackPairLists.write(0, mutableListOf(Pair(EnumWrappers.ItemSlot.FEET, player.inventory.boots)))
-        val pairList = testPacket.slotStackPairLists.read(0)
+        testPacket.slotStackPairLists.write(0, mutableListOf(Pair(EnumWrappers.ItemSlot.HEAD, player.inventory.helmet)))
+        //val pairList = testPacket.slotStackPairLists.read(0)
         //Bukkit.getLogger().info(pairList[0].second.type.toString())
         protocolManager.sendServerPacket(player, testPacket)
     }
 
-    @EventHandler
-    fun onPlayerLeave(e: PlayerQuitEvent) {
-        lastLoggedOutItems[e.player.uniqueId] = e.player.inventory.boots
-    }
 
     @EventHandler
     fun onPlayerJoin(e: PlayerJoinEvent) {
-        if (lastLoggedOutItems.containsKey(e.player.uniqueId)) {
-            e.player.inventory.boots = lastLoggedOutItems[e.player.uniqueId]
+        if (cosmeticEnabled[e.player.uniqueId] == null) {
+            cosmeticEnabled[e.player.uniqueId] = false
+        } else if (cosmeticEnabled[e.player.uniqueId] == true) {
             object : BukkitRunnable() {
                 override fun run() {
-                    // What you want to schedule goes here
-                    changeCosmetic(e.player)
+                    showCosmetic(e.player)
                 }
-            }.runTaskLater(this, 60)
-            //changeCosmetic(e.player)
+            }.runTaskLater(this, 30)
+
         }
     }
 
-    @EventHandler
-    fun onPlayerCloseInventory(e: InventoryCloseEvent) {
-        if (e.player !is Player) return
-        e.player.inventory.boots = lastLoggedOutItems[e.player.uniqueId]
-        object : BukkitRunnable() {
-            override fun run() {
-                // What you want to schedule goes here
-                changeCosmetic(e.player as Player)
-            }
-        }.runTaskLater(this, 30)
-    }
+//    @EventHandler
+//    fun onPlayerCloseInventory(e: InventoryCloseEvent) {
+//        if (e.player !is Player) return
+//        e.player.inventory.boots = lastLoggedOutItems[e.player.uniqueId]
+//        object : BukkitRunnable() {
+//            override fun run() {
+//                // What you want to schedule goes here
+//                changeCosmetic(e.player as Player)
+//            }
+//        }.runTaskLater(this, 30)
+//    }
 }

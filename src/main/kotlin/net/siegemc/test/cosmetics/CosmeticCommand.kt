@@ -10,16 +10,28 @@ import org.bukkit.entity.Player
 class CosmeticCommand: BaseCommand() {
     @Default
     fun cosmeticCommand(player: Player) {
-        CosmeticsTest.instance?.changeCosmetic(player)
+        //CosmeticsTest.instance?.changeCosmetic(player)
     }
 
     @Subcommand("test")
     fun cosmeticTest(player: Player) {
-        player.sendMessage(player.inventory.boots?.type.toString())
+        player.sendMessage(player.inventory.helmet?.type.toString())
     }
 
-    @Subcommand("unhide")
-    fun cosmeticUnhide(player: Player) {
+    @Subcommand("enable")
+    fun cosmeticEnable(player: Player) {
+        CosmeticsTest.instance?.cosmeticEnabled?.set(player.uniqueId, true)
+        CosmeticsTest.instance?.showCosmetic(player)
+    }
+
+    @Subcommand("disable")
+    fun cosmeticDisable(player: Player) {
+        CosmeticsTest.instance?.cosmeticEnabled?.set(player.uniqueId, false)
         CosmeticsTest.instance?.unhideCosmetic(player)
+    }
+
+    @Subcommand("my")
+    fun cosmeticMy(player: Player) {
+        player.sendMessage("Your cosmetic is " + (CosmeticsTest.instance?.cosmetics?.get(player.uniqueId) ?: "null"))
     }
 }

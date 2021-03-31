@@ -30,6 +30,7 @@ repositories {
     maven { url = uri("https://nexus.mcdevs.us/repository/mcdevs/") }
     maven { url = uri("https://papermc.io/repo/repository/maven-public/") }
     maven { url = uri("https://repo.dmulloy2.net/nexus/repository/public/") }
+    maven { url = uri("https://repo.codemc.org/repository/maven-public/") }
 }
 
 dependencies {
@@ -37,6 +38,7 @@ dependencies {
     compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
     compileOnly("com.comphenix.protocol:ProtocolLib:4.6.0")
     implementation("co.aikar:acf-paper:0.5.0-SNAPSHOT")
+    implementation("de.tr7zw:item-nbt-api-plugin:2.7.1")
     //compile(fileTree(include(["*.jar"]), dir("libs")))
 }
 
